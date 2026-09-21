@@ -103,6 +103,12 @@ Structured PASS/FAIL result returned to Pi
 
 The root filesystem is read-only and reused. The workspace drive is writable and discarded after the invocation. There is no guest network device.
 
+### Long-term execution fleet
+
+The intended production topology keeps Kubernetes out of each execution's hot path. Kubernetes maintains a pool of resident executor daemons, normally one per dedicated KVM node. A capacity-aware scheduler leases a daemon slot and that daemon launches Firecracker locally. Queue pressure and diminishing spare slots cause Kubernetes to provision another node and daemon; scale-in first drains active work. This retains direct microVM launch latency while gaining fleet health, replacement, and coarse-grained autoscaling.
+
+See [`docs/distributed-executor.md`](docs/distributed-executor.md) for capacity leases, cache-aware routing, autoscaling signals, draining, and the Git delta model.
+
 ## Intentional shortcuts
 
 - The fixture supports ordinary UTF-8 files and directories, not arbitrary Git modes or symlinks.
@@ -117,4 +123,4 @@ The root filesystem is read-only and reused. The workspace drive is writable and
 
 `effect-pi@0.1.0` uses Effect `4.0.0-rc.116`. Published `@effect-vfs/core@0.4.0` still declares an exact `rc.114` peer. This project allows the peer override and has exercised VFS fixture loading, overlays, editing, capture, and checkpointing on `rc.116`. Remove the override when Effect VFS publishes matching metadata.
 
-See [`docs/firecracker-executor.md`](docs/firecracker-executor.md) for the primary-source constraints behind the guest design.
+See [`docs/firecracker-executor.md`](docs/firecracker-executor.md) for the primary-source constraints behind the guest design, and [`docs/distributed-executor.md`](docs/distributed-executor.md) for the intended cached, delta-driven executor direction.
