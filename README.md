@@ -109,6 +109,17 @@ The intended production topology keeps Kubernetes out of each execution's hot pa
 
 See [`docs/distributed-executor.md`](docs/distributed-executor.md) for capacity leases, cache-aware routing, autoscaling signals, draining, and the Git delta model.
 
+### Distributed capacity proof
+
+The repository now includes a SQLite-backed execution API and independently running executor daemon. The distributed demo starts one API process and two one-slot executor processes, then submits three Firecracker test jobs. Two run concurrently while the third remains durably queued until a slot is released:
+
+```sh
+nix develop
+pnpm demo:distributed
+```
+
+`GET /fleet` reports queued, leased, and running work plus each executor's active and available slots. See [`docs/execution-control-plane.md`](docs/execution-control-plane.md) for the implemented state machine, HTTP surface, validated result, and remaining limitations.
+
 ## Intentional shortcuts
 
 - The fixture supports ordinary UTF-8 files and directories, not arbitrary Git modes or symlinks.
