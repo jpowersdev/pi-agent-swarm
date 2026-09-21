@@ -1,0 +1,9 @@
+.direnv/
+node_modules/
+dist/
+dist-test/
+.data/
+.env
+.env.*
+!.env.example
+*.tgz

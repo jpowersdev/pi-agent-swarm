@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t tmpfs -o size=128m tmpfs /tmp
+mount -t ext4 /dev/vdb /workspace
+
+cd /workspace/repository
+set +e
+node --test
+status=$?
+set -e
+
+printf '\n__PI_AGENT_SWARM_RESULT__=%s\n' "$status"
+sync
+reboot -f

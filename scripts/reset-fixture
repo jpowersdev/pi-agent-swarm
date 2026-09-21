@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fixture="$(realpath "$root/../pi-agent-swarm-fixture")"
+
+git -C "$fixture" reset --hard baseline
+git -C "$fixture" clean -fd

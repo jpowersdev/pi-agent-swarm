@@ -1,0 +1,18 @@
+peerDependencyRules:
+  allowedVersions:
+    effect: 4.0.0-rc.116
+
+allowBuilds:
+  '@google/genai': true
+  esbuild: true
+  protobufjs: true
+
+minimumReleaseAgeExclude:
+  - '@earendil-works/chord@0.86.1'
+  - '@earendil-works/pi-agent-core@0.86.1'
+  - '@earendil-works/pi-ai@0.86.1'
+  - '@earendil-works/pi-coding-agent@0.86.1'
+  - '@earendil-works/pi-telemetry@0.86.1'
+  - '@earendil-works/pi-tui@0.86.1'
+  - '@effect-vfs/core@0.4.0'
+  - '@jpowersdev/effect-pi@0.1.0'
