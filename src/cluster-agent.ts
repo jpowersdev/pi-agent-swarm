@@ -8,18 +8,20 @@ import * as Layer from "effect/Layer"
 import * as KeyValueStore from "effect/unstable/persistence/KeyValueStore"
 
 import * as Agent from "./Agent.js"
-import * as Firecracker from "./Firecracker.js"
+import * as ClusterExecutionClient from "./ClusterExecutionClient.js"
+import * as Executions from "./Executions.js"
+import * as WorkspaceTools from "./WorkspaceTools.js"
 
-const projectRoot = fileURLToPath(new URL("..", import.meta.url)).replace(/\/$/, "")
 const repository = fileURLToPath(new URL("../../pi-agent-swarm-fixture", import.meta.url)).replace(/\/$/, "")
-const firecracker = Firecracker.make(projectRoot)
 
-Agent.run(repository, {
-  test: (commit) => firecracker.test(repository, commit)
+Effect.gen(function* () {
+  const executions = yield* Executions.Service
+  yield* Agent.run(repository, WorkspaceTools.clusterTestExecutor(executions))
 }).pipe(
   Effect.scoped,
   Effect.provide(Layer.mergeAll(
     Agent.modelLayer,
+    ClusterExecutionClient.layer,
     NodeServices.layer,
     KeyValueStore.layerMemory
   )),

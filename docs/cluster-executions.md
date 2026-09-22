@@ -84,7 +84,25 @@ Cluster `Start` messages are persisted, but the model invocation rule does not a
 
 The configured execution store is authoritative for state. Cluster mailbox storage is authoritative only for message delivery.
 
-## Real multiprocess proof
+## End-to-end agent
+
+`pnpm demo:cluster-agent` runs the complete **Clustered Firecracker Agent** path:
+
+```text
+Pi custom VFS tools
+  → checkpoint current overlay as an immutable Git commit
+  → submit semantic `test` action
+  → persisted Execution entity
+  → capacity-limited Cluster runner
+  → scoped Firecracker microVM
+  → structured PASS/FAIL result returned to Pi
+```
+
+The agent receives `list_directory`, `read_file`, `write_file`, `edit_file`, and `run_tests`. It receives neither Bash nor a generic execution command. Interrupting `run_tests` sends `Cancel` to the execution entity before the tool effect terminates.
+
+A validated real run inspected the fixture, fixed its addition implementation through VFS, created commit `2e4033673b451fafa17b1ce38ba28a7eb52d7981`, executed the test in the Cluster-managed microVM, and reported PASS. The complete model-driven run took approximately 29 seconds.
+
+## Real multiprocess capacity proof
 
 Run:
 

@@ -1,6 +1,6 @@
 # pi-agent-swarm
 
-A deliberately narrow experiment connecting [`effect-pi`](https://www.npmjs.com/package/@jpowersdev/effect-pi), [Effect VFS](https://github.com/lloydrichards/effect-virtual-fs), Git checkpoints, and real [Firecracker](https://firecracker-microvm.github.io/) execution.
+A **Clustered Firecracker Agent** experiment connecting [`effect-pi`](https://www.npmjs.com/package/@jpowersdev/effect-pi), [Effect VFS](https://github.com/lloydrichards/effect-virtual-fs), Git checkpoints, and real [Firecracker](https://firecracker-microvm.github.io/) execution.
 
 One Pi session receives only five tools:
 
@@ -22,13 +22,14 @@ The included fixture starts with this bug:
 export const add = (left, right) => left - right
 ```
 
-A real run using `openai-codex/gpt-6-astra`:
+A real clustered run using `openai-codex/gpt-6-astra`:
 
 1. Loaded the fixture into Effect VFS.
 2. Let Pi inspect and edit only through custom VFS tools.
-3. Created commit `881ba0114ed46de0e62a4512d563a3b350a2dc0d` in the separate fixture repository.
-4. Booted Firecracker and ran the committed revision's test suite.
-5. Reported one passing test in roughly 0.9 seconds from checkpoint through guest shutdown.
+3. Created commit `2e4033673b451fafa17b1ce38ba28a7eb52d7981` in the separate fixture repository.
+4. Submitted that exact commit to a durable Effect Cluster execution entity.
+5. Booted Firecracker on an executor runner and ran the committed revision's test suite.
+6. Returned one passing test through `run_tests`; the complete agent run took about 29 seconds.
 
 The commit changed only `src/add.js`. No host Bash tool was exposed to the model.
 
@@ -61,6 +62,12 @@ The Nix shell supplies Firecracker, `mke2fs`, PostgreSQL, Docker CLI, Node, pnpm
 nix develop
 pnpm install --frozen-lockfile
 pnpm prepare:firecracker
+pnpm demo:cluster-agent
+```
+
+`demo:cluster-agent` resets the dedicated fixture repository, starts ephemeral PostgreSQL and two one-VM Cluster runners, and then runs the real Pi session. To run the original direct, single-process path instead:
+
+```sh
 pnpm reset:fixture
 pnpm demo
 ```
@@ -70,7 +77,7 @@ pnpm demo
 The demo defaults to the existing `openai-codex/gpt-6-astra` Pi credential. Override model selection if needed:
 
 ```sh
-SWARM_PROVIDER=... SWARM_MODEL=... pnpm demo
+SWARM_PROVIDER=... SWARM_MODEL=... pnpm demo:cluster-agent
 ```
 
 Normal checks do not require KVM or make model requests:
@@ -92,6 +99,12 @@ Effect VFS overlay
 Separate Git fixture repository
   │ immutable commit
   ▼
+Execution Cluster client
+  │ persisted Start(exact commit)
+  ▼
+Execution entity on a capacity-limited runner
+  │ scoped Firecracker process
+  ▼
 Commit-specific ext4 workspace drive
   │ attached as /dev/vdb
   ▼
@@ -109,12 +122,14 @@ Every test invocation is an Effect Cluster entity addressed by its execution ID.
 
 Each runner has an immediate VM-capacity semaphore independent of its larger resident-entity bound. Runner shard weight follows VM capacity, and execution IDs advance through low-discrepancy positions around the shard ring to smooth small bursts without owning placement. One process can host one or many microVMs, and additional runner processes can join the socket cluster without changing callers.
 
-The real cluster demonstration starts PostgreSQL, two independent one-VM runner processes, and one client. It runs six tests, demonstrates two concurrent VMs with excess entities queued, and cancels a seventh running VM:
+The capacity demonstration starts PostgreSQL, two independent one-VM runner processes, and one synthetic client. It runs six tests, demonstrates two concurrent VMs with excess entities queued, and cancels a seventh running VM:
 
 ```sh
 nix develop
 pnpm demo:cluster
 ```
+
+The headline `demo:cluster-agent` command uses the same fleet from Pi's `run_tests` tool. Pi receives VFS read/write tools and the semantic test action, never Bash or arbitrary microVM execution.
 
 See [`docs/cluster-executions.md`](docs/cluster-executions.md) for the implemented lifecycle and [`docs/distributed-executor.md`](docs/distributed-executor.md) for workspace transport, caching, and the platform-neutral scaling direction.
 

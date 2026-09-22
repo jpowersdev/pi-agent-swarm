@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+client=${1:?"usage: run-cluster-client <compiled-client-entrypoint>"}
+cd "$root"
+
+pnpm build
+mkdir -p .data
+
+postgres_data="$root/.data/cluster-postgres"
+postgres_socket="$postgres_data/socket"
+postgres_log="$root/.data/cluster-postgres.log"
+runner_a_log="$root/.data/cluster-runner-a.log"
+runner_b_log="$root/.data/cluster-runner-b.log"
+runner_a_pid=""
+runner_b_pid=""
+postgres_started=false
+
+# shellcheck disable=SC2329 # Invoked by the EXIT trap.
+cleanup() {
+  if [[ -n "$runner_a_pid" ]]; then kill "$runner_a_pid" 2>/dev/null || true; fi
+  if [[ -n "$runner_b_pid" ]]; then kill "$runner_b_pid" 2>/dev/null || true; fi
+  wait "$runner_a_pid" "$runner_b_pid" 2>/dev/null || true
+  if [[ "$postgres_started" == true ]]; then
+    pg_ctl -D "$postgres_data" stop --mode=fast --wait >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
+rm -rf "$postgres_data"
+: > "$postgres_log"
+initdb -D "$postgres_data" --username=postgres --auth=trust --no-locale --encoding=UTF8 >/dev/null
+mkdir -p "$postgres_socket"
+pg_ctl -D "$postgres_data" \
+  -l "$postgres_log" \
+  -o "-h 127.0.0.1 -p 55432 -k $postgres_socket" \
+  start --wait >/dev/null
+postgres_started=true
+
+wait_for_port() {
+  local pid=$1
+  local port=$2
+  local log=$3
+  for _ in $(seq 1 100); do
+    if ! kill -0 "$pid" 2>/dev/null; then
+      cat "$log" >&2
+      return 1
+    fi
+    if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
+      exec 3>&-
+      return 0
+    fi
+    sleep 0.05
+  done
+  echo "runner on port $port did not become ready" >&2
+  cat "$log" >&2
+  return 1
+}
+
+SWARM_RUNNER_PORT=34431 SWARM_RUNNER_CAPACITY=1 \
+  node dist/cluster-executor.js >"$runner_a_log" 2>&1 &
+runner_a_pid=$!
+wait_for_port "$runner_a_pid" 34431 "$runner_a_log"
+
+SWARM_RUNNER_PORT=34432 SWARM_RUNNER_CAPACITY=1 \
+  node dist/cluster-executor.js >"$runner_b_log" 2>&1 &
+runner_b_pid=$!
+wait_for_port "$runner_b_pid" 34432 "$runner_b_log"
+
+# Let both runners observe the shared registration and rebalance shards.
+sleep 1
+
+node "$client"

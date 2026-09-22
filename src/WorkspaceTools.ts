@@ -2,7 +2,7 @@ import { Type } from "@earendil-works/pi-ai"
 import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent"
 import * as Effect from "effect/Effect"
 
-import type * as Firecracker from "./Firecracker.js"
+import type * as Executions from "./Executions.js"
 import type * as Workspace from "./Workspace.js"
 
 const toolResult = <A>(
@@ -22,12 +22,41 @@ const toolResult = <A>(
   })
 ), signal === undefined ? undefined : { signal })
 
+export interface TestResult {
+  readonly commit: string
+  readonly passed: boolean
+  readonly exitCode: number
+  readonly output: string
+  readonly durationMillis: number
+}
+
+export interface TestExecutor {
+  readonly test: (commit: string) => Effect.Effect<TestResult, { readonly message: string }>
+}
+
 export interface Tools {
   readonly names: ReadonlyArray<string>
   readonly definitions: ReadonlyArray<ToolDefinition>
 }
 
-export const make = (workspace: Workspace.Workspace, firecracker: Firecracker.Firecracker): Tools => {
+export const clusterTestExecutor = (executions: Executions.Interface): TestExecutor => ({
+  test: Effect.fn("WorkspaceTools.clusterTestExecutor")(function* (commit) {
+    const submitted = yield* executions.submit({ commit, action: "test" })
+    const completed = yield* executions.await(submitted.executionId).pipe(
+      Effect.onInterrupt(() => executions.cancel(submitted.executionId).pipe(Effect.ignore))
+    )
+
+    return {
+      commit,
+      passed: completed.state === "succeeded",
+      exitCode: completed.exitCode ?? 125,
+      output: completed.output ?? `Execution ended in state ${completed.state}`,
+      durationMillis: completed.durationMillis ?? 0
+    }
+  })
+})
+
+export const make = (workspace: Workspace.Workspace, executor: TestExecutor): Tools => {
   const readFile = defineTool({
     name: "read_file",
     label: "Read file",
@@ -105,7 +134,7 @@ export const make = (workspace: Workspace.Workspace, firecracker: Firecracker.Fi
     executionMode: "sequential" as const,
     execute: (_toolCallId, _params, signal) => toolResult(
       workspace.checkpoint("before test").pipe(
-        Effect.flatMap((checkpoint) => firecracker.test(workspace.repository, checkpoint.commit))
+        Effect.flatMap((checkpoint) => executor.test(checkpoint.commit))
       ),
       (result) => [
         `Tests: ${result.passed ? "PASS" : "FAIL"}`,
