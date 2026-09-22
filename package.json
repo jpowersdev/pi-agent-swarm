@@ -13,8 +13,7 @@
     "check": "tsc -b",
     "clean": "tsc -b --clean && rm -rf dist dist-test",
     "demo": "pnpm build && node dist/main.js",
-    "demo:capacity": "pnpm build && node dist/capacity-demo.js",
-    "demo:distributed": "bash scripts/run-distributed-demo",
+    "demo:cluster": "bash scripts/run-cluster-demo",
     "prepare:firecracker": "bash scripts/prepare-firecracker",
     "reset:fixture": "bash scripts/reset-fixture",
     "test": "vitest run"
@@ -25,6 +24,7 @@
     "@effect-vfs/core": "0.4.0",
     "@effect/platform-node": "4.0.0-rc.116",
     "@effect/platform-node-shared": "4.0.0-rc.116",
+    "@effect/sql-pg": "4.0.0-rc.116",
     "@jpowersdev/effect-pi": "0.1.0",
     "effect": "4.0.0-rc.116"
   },

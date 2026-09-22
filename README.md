@@ -53,7 +53,7 @@ jpowersdev/
 - Existing Pi credentials at `~/.pi/agent/auth.json`
 - Node.js 26 and pnpm 11.25.0
 
-The Nix shell supplies Firecracker, `mke2fs`, Docker CLI, Node, pnpm, Git, curl, and jq.
+The Nix shell supplies Firecracker, `mke2fs`, PostgreSQL, Docker CLI, Node, pnpm, Git, curl, and jq.
 
 ## Run
 
@@ -103,29 +103,27 @@ Structured PASS/FAIL result returned to Pi
 
 The root filesystem is read-only and reused. The workspace drive is writable and discarded after the invocation. There is no guest network device.
 
-### Long-term execution fleet
+### Cluster execution fleet
 
-The intended production topology keeps Kubernetes out of each execution's hot path. Kubernetes maintains a pool of resident executor daemons, normally one per dedicated KVM node. A capacity-aware scheduler leases a daemon slot and that daemon launches Firecracker locally. Queue pressure and diminishing spare slots cause Kubernetes to provision another node and daemon; scale-in first drains active work. This retains direct microVM launch latency while gaining fleet health, replacement, and coarse-grained autoscaling.
+Every test invocation is an Effect Cluster entity addressed by its execution ID. The entity owns the scoped Firecracker fiber; completion, cancellation, shard movement, and runner shutdown all clean up that resource. Persisted `Start` messages provide durable queuing, while an idempotent `queued → running` transition prevents replay from launching a second VM.
 
-See [`docs/distributed-executor.md`](docs/distributed-executor.md) for capacity leases, cache-aware routing, autoscaling signals, draining, and the Git delta model.
+Each runner has an immediate VM-capacity semaphore independent of its larger resident-entity bound. One process can host one or many microVMs, and additional runner processes can join the socket cluster without changing callers.
 
-### Distributed capacity proof
-
-The repository now includes a SQLite-backed execution API and independently running executor daemon. The distributed demo starts one API process and two one-slot executor processes, then submits three Firecracker test jobs. Two run concurrently while the third remains durably queued until a slot is released:
+The real cluster demonstration starts PostgreSQL, two independent one-VM runner processes, and one client. It runs six tests, demonstrates two concurrent VMs with excess entities queued, and cancels a seventh running VM:
 
 ```sh
 nix develop
-pnpm demo:distributed
+pnpm demo:cluster
 ```
 
-`GET /fleet` reports queued, leased, and running work plus each executor's active and available slots. See [`docs/execution-control-plane.md`](docs/execution-control-plane.md) for the implemented state machine, HTTP surface, validated result, and remaining limitations.
+See [`docs/cluster-executions.md`](docs/cluster-executions.md) for the implemented lifecycle and [`docs/distributed-executor.md`](docs/distributed-executor.md) for workspace transport, caching, and the platform-neutral scaling direction.
 
 ## Intentional shortcuts
 
 - The fixture supports ordinary UTF-8 files and directories, not arbitrary Git modes or symlinks.
 - The current executor creates a full commit-specific workspace drive. Git still records only changed blobs, but cross-machine delta transport is future work.
 - It cold-boots from a kernel/rootfs instead of restoring a prepared Firecracker memory snapshot.
-- The session and executor run locally; there is no Effect Cluster control plane yet.
+- The Cluster proof uses local processes, local KVM, and ephemeral PostgreSQL; it has not yet been exercised across machines.
 - Firecracker is launched directly rather than through its production `jailer`.
 - The fixture has no third-party dependencies. A real codebase needs a toolchain/dependency layer keyed by an image digest.
 - Build/test code should be treated as hostile even though the model cannot invoke arbitrary Bash.

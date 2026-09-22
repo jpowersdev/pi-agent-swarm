@@ -18,6 +18,7 @@
           jq
           nodejs_26
           pnpm
+          postgresql
         ];
       };
     };
