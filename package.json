@@ -27,7 +27,7 @@
     "@effect/platform-node": "4.0.0-rc.116",
     "@effect/platform-node-shared": "4.0.0-rc.116",
     "@effect/sql-pg": "4.0.0-rc.116",
-    "@jpowersdev/effect-pi": "0.1.0",
+    "@jpowersdev/effect-pi": "0.2.0",
     "effect": "4.0.0-rc.116"
   },
   "devDependencies": {

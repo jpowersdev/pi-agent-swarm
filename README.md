@@ -65,7 +65,7 @@ pnpm prepare:firecracker
 pnpm demo:cluster-agent
 ```
 
-`setup:fixture` is idempotent, and the demo commands also create the fixture automatically when it is missing. `demo:cluster-agent` resets the disposable fixture repository, starts ephemeral PostgreSQL and two one-VM Cluster runners, and then runs the real Pi session. To run the original direct, single-process path instead:
+`setup:fixture` is idempotent, and the demo commands also create the fixture automatically when it is missing. `demo:cluster-agent` resets the disposable fixture repository, starts ephemeral PostgreSQL and two one-VM Cluster runners, and then runs the real Pi session. Assistant turns arrive as finite `AssistantMessage.stream` values; the demo awaits each event's `content` effect and logs completed text between tool calls. To run the original direct, single-process path instead:
 
 ```sh
 pnpm reset:fixture
@@ -145,6 +145,6 @@ See [`docs/cluster-executions.md`](docs/cluster-executions.md) for the implement
 
 ## Version compatibility
 
-`effect-pi@0.1.0` uses Effect `4.0.0-rc.116`. Published `@effect-vfs/core@0.4.0` still declares an exact `rc.114` peer. This project allows the peer override and has exercised VFS fixture loading, overlays, editing, capture, and checkpointing on `rc.116`. Remove the override when Effect VFS publishes matching metadata.
+`effect-pi@0.2.0` uses Effect `4.0.0-rc.116`. Published `@effect-vfs/core@0.4.0` still declares an exact `rc.114` peer. This project allows the peer override and has exercised VFS fixture loading, overlays, editing, capture, and checkpointing on `rc.116`. Remove the override when Effect VFS publishes matching metadata.
 
 See [`docs/firecracker-executor.md`](docs/firecracker-executor.md) for the primary-source constraints behind the guest design, and [`docs/distributed-executor.md`](docs/distributed-executor.md) for the intended cached, delta-driven executor direction.

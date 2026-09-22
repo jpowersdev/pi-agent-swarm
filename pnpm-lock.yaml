@@ -27,8 +27,8 @@ importers:
         specifier: 4.0.0-rc.116
         version: 4.0.0-rc.116(effect@4.0.0-rc.116)
       '@jpowersdev/effect-pi':
-        specifier: 0.1.0
-        version: 0.1.0(effect@4.0.0-rc.116)(ws@8.21.3)
+        specifier: 0.2.0
+        version: 0.2.0(effect@4.0.0-rc.116)(ws@8.21.3)
       effect:
         specifier: 4.0.0-rc.116
         version: 4.0.0-rc.116
@@ -361,8 +361,8 @@ packages:
       '@modelcontextprotocol/sdk':
         optional: true
 
-  '@jpowersdev/effect-pi@0.1.0':
-    resolution: {integrity: sha512-vnFTIjCqX1anR+ULLGO1WKPQCVJSQolYY5L78vhE/syCcr4W/T7YvtrW2Ab3lvxdkB2+zpYAFp6r26BG9lVKhQ==}
+  '@jpowersdev/effect-pi@0.2.0':
+    resolution: {integrity: sha512-xOGX4to6fy7yWqQxT4chaxSmJoozINk5uklCxy+Vquh2udGQm780l63+eV7smjY+U0lyagLoZUz4ynqXdW+opw==}
     engines: {node: '>=26.0.0'}
     peerDependencies:
       effect: 4.0.0-rc.116
@@ -1667,7 +1667,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@jpowersdev/effect-pi@0.1.0(effect@4.0.0-rc.116)(ws@8.21.3)':
+  '@jpowersdev/effect-pi@0.2.0(effect@4.0.0-rc.116)(ws@8.21.3)':
     dependencies:
       '@earendil-works/pi-coding-agent': 0.86.1(ws@8.21.3)
       effect: 4.0.0-rc.116

@@ -55,8 +55,9 @@ export const run = Effect.fn("Agent.run")(function* (
   })
 
   yield* session.events.pipe(
-    Stream.filter((event) => event._tag !== "TextDelta"),
-    Stream.runForEach((event) => Console.log(event)),
+    Stream.runForEach((event) => event._tag === "AssistantMessage"
+      ? Effect.flatMap(event.content, (content) => Console.log(content))
+      : Console.log(event)),
     Effect.forkScoped({ startImmediately: true })
   )
 
