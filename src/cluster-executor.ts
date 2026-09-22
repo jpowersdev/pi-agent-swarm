@@ -17,7 +17,7 @@ import * as ExecutionIds from "./ExecutionIds.js"
 import * as ExecutionStoreSql from "./ExecutionStoreSql.js"
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url)).replace(/\/$/, "")
-const repository = fileURLToPath(new URL("../../pi-agent-swarm-fixture", import.meta.url)).replace(/\/$/, "")
+const repository = fileURLToPath(new URL("../.data/fixture", import.meta.url)).replace(/\/$/, "")
 const SqlLive = PgClient.layer({
   host: "127.0.0.1",
   port: 55432,

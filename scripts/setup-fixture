@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+template="$root/fixtures/swarm-fixture"
+fixture="$root/.data/fixture"
+
+if [[ -d "$fixture/.git" ]]; then
+  if git -C "$fixture" rev-parse --verify --quiet refs/tags/baseline >/dev/null; then
+    echo "Fixture repository is ready at $fixture"
+    exit 0
+  fi
+
+  echo "$fixture is a Git repository without the required baseline tag" >&2
+  echo "Remove it and run pnpm setup:fixture again" >&2
+  exit 1
+fi
+
+if [[ -e "$fixture" ]]; then
+  echo "$fixture already exists but is not a Git repository" >&2
+  echo "Remove it and run pnpm setup:fixture again" >&2
+  exit 1
+fi
+
+mkdir -p "$fixture"
+cp -R "$template/." "$fixture/"
+
+git -C "$fixture" init -b main
+git -C "$fixture" add .
+git -C "$fixture" \
+  -c user.name="Pi Agent Swarm" \
+  -c user.email="swarm@example.invalid" \
+  commit -m "Create failing fixture project"
+git -C "$fixture" tag baseline
+
+echo "Created fixture repository at $fixture"

@@ -12,7 +12,7 @@ import * as ClusterExecutionClient from "./ClusterExecutionClient.js"
 import * as Executions from "./Executions.js"
 import * as WorkspaceTools from "./WorkspaceTools.js"
 
-const repository = fileURLToPath(new URL("../../pi-agent-swarm-fixture", import.meta.url)).replace(/\/$/, "")
+const repository = fileURLToPath(new URL("../.data/fixture", import.meta.url)).replace(/\/$/, "")
 
 Effect.gen(function* () {
   const executions = yield* Executions.Service

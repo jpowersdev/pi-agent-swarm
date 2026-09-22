@@ -12,7 +12,7 @@ import * as Execution from "./Execution.js"
 import * as Executions from "./Executions.js"
 import * as Process from "./Process.js"
 
-const repository = fileURLToPath(new URL("../../pi-agent-swarm-fixture", import.meta.url)).replace(/\/$/, "")
+const repository = fileURLToPath(new URL("../.data/fixture", import.meta.url)).replace(/\/$/, "")
 
 const program = Effect.gen(function* () {
   const executions = yield* Executions.Service

@@ -10,7 +10,7 @@ One Pi session receives only five tools:
 - `edit_file`
 - `run_tests`
 
-The first four operate on a private Effect VFS overlay. `run_tests` materializes that overlay into the adjacent fixture repository, creates a real Git commit, constructs a commit-specific ext4 workspace drive, boots a networkless Firecracker microVM, and runs `node --test` there. Pi has no Bash tool and the guest has no model credentials.
+The first four operate on a private Effect VFS overlay. `run_tests` materializes that overlay into the generated fixture repository, creates a real Git commit, constructs a commit-specific ext4 workspace drive, boots a networkless Firecracker microVM, and runs `node --test` there. Pi has no Bash tool and the guest has no model credentials.
 
 This is an experiment, not a reusable library or production sandbox.
 
@@ -26,25 +26,24 @@ A real clustered run using `openai-codex/gpt-6-astra`:
 
 1. Loaded the fixture into Effect VFS.
 2. Let Pi inspect and edit only through custom VFS tools.
-3. Created commit `2e4033673b451fafa17b1ce38ba28a7eb52d7981` in the separate fixture repository.
+3. Created a commit in the generated fixture repository.
 4. Submitted that exact commit to a durable Effect Cluster execution entity.
 5. Booted Firecracker on an executor runner and ran the committed revision's test suite.
 6. Returned one passing test through `run_tests`; the complete agent run took about 29 seconds.
 
 The commit changed only `src/add.js`. No host Bash tool was exposed to the model.
 
-## Repositories
+## Fixture repository
 
-The application expects these sibling directories:
+The deliberately failing project is tracked as a template in `fixtures/swarm-fixture`. Setup copies it to `.data/fixture` and initializes the copy as a disposable Git repository:
 
 ```text
-jpowersdev/
-├── effect-pi/
-├── pi-agent-swarm/
-└── pi-agent-swarm-fixture/
+pi-agent-swarm/
+├── fixtures/swarm-fixture/  # tracked template
+└── .data/fixture/           # generated Git repository
 ```
 
-`pi-agent-swarm-fixture` is a separate Git repository. Its `baseline` tag identifies the deliberately failing initial state. `pnpm reset:fixture` discards all later fixture commits and returns it to that tag.
+The generated repository's `baseline` tag identifies the failing initial state. `pnpm reset:fixture` discards all later fixture commits and returns it to that tag. Delete `.data/fixture` and run `pnpm setup:fixture` to recreate it from the template.
 
 ## Requirements
 
@@ -61,11 +60,12 @@ The Nix shell supplies Firecracker, `mke2fs`, PostgreSQL, Docker CLI, Node, pnpm
 ```sh
 nix develop
 pnpm install --frozen-lockfile
+pnpm setup:fixture
 pnpm prepare:firecracker
 pnpm demo:cluster-agent
 ```
 
-`demo:cluster-agent` resets the dedicated fixture repository, starts ephemeral PostgreSQL and two one-VM Cluster runners, and then runs the real Pi session. To run the original direct, single-process path instead:
+`setup:fixture` is idempotent, and the demo commands also create the fixture automatically when it is missing. `demo:cluster-agent` resets the disposable fixture repository, starts ephemeral PostgreSQL and two one-VM Cluster runners, and then runs the real Pi session. To run the original direct, single-process path instead:
 
 ```sh
 pnpm reset:fixture

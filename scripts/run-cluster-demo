@@ -2,4 +2,5 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+bash "$root/scripts/setup-fixture"
 exec bash "$root/scripts/run-cluster-client" dist/cluster-demo.js

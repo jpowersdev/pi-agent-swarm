@@ -11,7 +11,7 @@ import * as Agent from "./Agent.js"
 import * as Firecracker from "./Firecracker.js"
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url)).replace(/\/$/, "")
-const repository = fileURLToPath(new URL("../../pi-agent-swarm-fixture", import.meta.url)).replace(/\/$/, "")
+const repository = fileURLToPath(new URL("../.data/fixture", import.meta.url)).replace(/\/$/, "")
 const firecracker = Firecracker.make(projectRoot)
 
 Agent.run(repository, {
