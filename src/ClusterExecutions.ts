@@ -1,4 +1,3 @@
-import * as Crypto from "effect/Crypto"
 import * as Deferred from "effect/Deferred"
 import type * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
@@ -14,6 +13,7 @@ import type * as Sharding from "effect/unstable/cluster/Sharding"
 import * as Execution from "./Execution.js"
 import * as ExecutionBackend from "./ExecutionBackend.js"
 import * as ExecutionCapacity from "./ExecutionCapacity.js"
+import * as ExecutionIds from "./ExecutionIds.js"
 import * as ExecutionProtocol from "./ExecutionProtocol.js"
 import * as ExecutionStore from "./ExecutionStore.js"
 import * as Executions from "./Executions.js"
@@ -161,19 +161,18 @@ export const runnerLayer = (
 export const clientLayer: Layer.Layer<
   Executions.Service,
   never,
-  Crypto.Crypto | ExecutionStore.Service | Sharding.Sharding
+  ExecutionIds.Service | ExecutionStore.Service | Sharding.Sharding
 > = Layer.effect(
   Executions.Service,
   Effect.gen(function* () {
-    const crypto = yield* Crypto.Crypto
+    const executionIds = yield* ExecutionIds.Service
     const store = yield* ExecutionStore.Service
     const makeClient = yield* ExecutionProtocol.entity.client
 
     const submit: Executions.Interface["submit"] = Effect.fn("Executions.submit")(function* (request) {
-      const uuid = yield* crypto.randomUUIDv7.pipe(
+      const executionId = yield* executionIds.next.pipe(
         Effect.mapError((cause) => executionError("unassigned", "submit", cause))
       )
-      const executionId = `exec-${uuid}`
       const execution = yield* store.create(executionId, request).pipe(
         Effect.mapError((cause) => executionError(executionId, "submit", cause))
       )

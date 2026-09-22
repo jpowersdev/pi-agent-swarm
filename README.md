@@ -107,7 +107,7 @@ The root filesystem is read-only and reused. The workspace drive is writable and
 
 Every test invocation is an Effect Cluster entity addressed by its execution ID. The entity owns the scoped Firecracker fiber; completion, cancellation, shard movement, and runner shutdown all clean up that resource. Persisted `Start` messages provide durable queuing, while an idempotent `queued → running` transition prevents replay from launching a second VM.
 
-Each runner has an immediate VM-capacity semaphore independent of its larger resident-entity bound. One process can host one or many microVMs, and additional runner processes can join the socket cluster without changing callers.
+Each runner has an immediate VM-capacity semaphore independent of its larger resident-entity bound. Runner shard weight follows VM capacity, and execution IDs advance through low-discrepancy positions around the shard ring to smooth small bursts without owning placement. One process can host one or many microVMs, and additional runner processes can join the socket cluster without changing callers.
 
 The real cluster demonstration starts PostgreSQL, two independent one-VM runner processes, and one client. It runs six tests, demonstrates two concurrent VMs with excess entities queued, and cancels a seventh running VM:
 

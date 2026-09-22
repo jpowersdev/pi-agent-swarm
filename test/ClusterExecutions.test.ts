@@ -5,14 +5,32 @@ import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Queue from "effect/Queue"
 import * as Schedule from "effect/Schedule"
+import * as EntityId from "effect/unstable/cluster/EntityId"
+import * as Sharding from "effect/unstable/cluster/Sharding"
 import * as TestRunner from "effect/unstable/cluster/TestRunner"
 
 import * as ClusterExecutions from "../src/ClusterExecutions.js"
 import type * as Execution from "../src/Execution.js"
 import * as ExecutionBackend from "../src/ExecutionBackend.js"
 import * as ExecutionCapacity from "../src/ExecutionCapacity.js"
+import * as ExecutionIds from "../src/ExecutionIds.js"
 import * as ExecutionStore from "../src/ExecutionStore.js"
 import * as Executions from "../src/Executions.js"
+
+it.effect("generates execution ids at low-discrepancy shard positions", () =>
+  Effect.gen(function* () {
+    const executionIds = yield* ExecutionIds.Service
+    const sharding = yield* Sharding.Sharding
+
+    for (let cursor = 0; cursor < 12; cursor++) {
+      const executionId = yield* executionIds.next
+      const entityId = EntityId.make(executionId)
+      const shard = sharding.getShardId(entityId, ClusterExecutions.entity.getShardGroup(entityId))
+      it.expect(shard.id).toBe(ExecutionIds.targetShard(cursor))
+    }
+  }).pipe(
+    Effect.provide(ExecutionIds.layerMemory.pipe(Layer.provideMerge(TestRunner.layer)))
+  ))
 
 it.effect("runs and cancels Firecracker-shaped work through cluster entities", () =>
   Effect.gen(function* () {
@@ -40,11 +58,12 @@ it.effect("runs and cancels Firecracker-shaped work through cluster entities", (
     const CapacityLive = ExecutionCapacity.layer(1)
     const StoreLive = ExecutionStore.layerMemory
     const ClusterLive = TestRunner.layer
+    const ExecutionIdsLive = ExecutionIds.layerMemory.pipe(Layer.provide(ClusterLive))
     const RunnerLive = ClusterExecutions.runnerLayer({ entityMaxIdleTime: "50 millis" }).pipe(
       Layer.provide([BackendLive, CapacityLive, StoreLive, ClusterLive])
     )
     const ClientLive = ClusterExecutions.clientLayer.pipe(
-      Layer.provide([StoreLive, ClusterLive, NodeServices.layer]),
+      Layer.provide([ExecutionIdsLive, StoreLive, ClusterLive, NodeServices.layer]),
       Layer.provide(RunnerLive)
     )
 

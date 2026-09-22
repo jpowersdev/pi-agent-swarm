@@ -48,6 +48,18 @@ The lifecycle is:
 
 The active `Start` request itself keeps the entity resident. A separate `Entity.keepAlive` message is deliberately not used: persisted keep-alive requests can outlive a process-backed resource during shard movement.
 
+## Placement smoothing
+
+Random execution IDs can produce visibly uneven small bursts even when two equal runners own the same number of shards. `ExecutionIds` therefore uses a lightweight placement heuristic without tracking runner ownership:
+
+1. Order the 300 shards by their hash-ring position.
+2. Advance a shared PostgreSQL sequence by a stride of 113, which is coprime with 300 and approximates a golden-ratio rotation.
+3. Generate candidate IDs until one hashes to the selected shard.
+
+The sequence visits every shard before repeating while spreading consecutive submissions around the ring. Finding a preimage takes approximately 300 in-process hashes on average. It is only a placement hint: membership changes and weighted shard ownership remain entirely under Cluster's control.
+
+Runner shard weight is set to its configured Firecracker capacity, so heterogeneous runners receive a proportional share of shards.
+
 ## Capacity and residency
 
 The live-VM limit and the resident-entity limit are intentionally distinct:
@@ -57,7 +69,7 @@ The live-VM limit and the resident-entity limit are intentionally distinct:
 
 Effect's entity reaper has a minimum five-second resolution. Using `maxResidentEntities` as the VM slot count would leave a slot occupied for several seconds after a sub-second VM finishes. The semaphore releases immediately when Firecracker exits while the lightweight entity can passivate later.
 
-This also lets persisted entity requests wait inside a runner without creating extra VMs. It does not make shard placement capacity-aware: work can be unevenly distributed across runners. A future capacity controller may add runners or influence submission IDs, but correctness does not depend on even placement.
+This also lets persisted entity requests wait inside a runner without creating extra VMs. Placement smoothing is not live-load-aware, so work can still be unevenly distributed. A future capacity controller may add runners or introduce stronger scheduling, but correctness does not depend on even placement.
 
 ## Durability and replay
 
@@ -96,9 +108,9 @@ Each runner is configured for one concurrent VM. The validated run reached:
 four executions  → queued
 ```
 
-All six executions passed inside Firecracker in approximately 0.86–0.88 seconds each. Work was distributed across both runners. A seventh running execution was cancelled, and its scoped Firecracker process was interrupted before the client received the cancellation result.
+All six executions passed inside Firecracker in approximately 0.87–0.89 seconds each, distributed 4/2 across the two runners. A seventh running execution was cancelled, and its scoped Firecracker process was interrupted before the client received the cancellation result.
 
-The deterministic test in `test/ClusterExecutions.test.ts` verifies serialization at capacity one, successful completion, cancellation, and interruption without requiring KVM.
+The deterministic tests in `test/ClusterExecutions.test.ts` verify low-discrepancy ID generation, serialization at capacity one, successful completion, cancellation, and interruption without requiring KVM.
 
 ## Current limitations
 

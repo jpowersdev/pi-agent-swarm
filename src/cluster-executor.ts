@@ -13,6 +13,7 @@ import * as RunnerAddress from "effect/unstable/cluster/RunnerAddress"
 import * as ClusterExecutions from "./ClusterExecutions.js"
 import * as ExecutionBackend from "./ExecutionBackend.js"
 import * as ExecutionCapacity from "./ExecutionCapacity.js"
+import * as ExecutionIds from "./ExecutionIds.js"
 import * as ExecutionStoreSql from "./ExecutionStoreSql.js"
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url)).replace(/\/$/, "")
@@ -38,6 +39,8 @@ const RunnerLive = Layer.unwrap(
         serialization: "ndjson",
         shardingConfig: {
           runnerAddress: Option.some(RunnerAddress.make(host, port)),
+          runnerShardWeight: capacity,
+          shardsPerGroup: ExecutionIds.shardsPerGroup,
           maxResidentEntities: Math.max(64, capacity * 16),
           entityMaxIdleTime: "250 millis",
           shardLockRefreshInterval: "100 millis",

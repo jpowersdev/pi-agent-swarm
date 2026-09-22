@@ -12,6 +12,8 @@ import * as Schedule from "effect/Schedule"
 
 import * as ClusterExecutions from "./ClusterExecutions.js"
 import * as Execution from "./Execution.js"
+import * as ExecutionIds from "./ExecutionIds.js"
+import * as ExecutionIdsSql from "./ExecutionIdsSql.js"
 import * as ExecutionStoreSql from "./ExecutionStoreSql.js"
 import * as Executions from "./Executions.js"
 import * as Process from "./Process.js"
@@ -30,6 +32,7 @@ const ShardingLive = NodeClusterSocket.layer({
   serialization: "ndjson",
   shardingConfig: {
     runnerAddress: Option.none(),
+    shardsPerGroup: ExecutionIds.shardsPerGroup,
     shardLockRefreshInterval: "100 millis",
     shardLockExpiration: "2 seconds",
     refreshAssignmentsInterval: "100 millis",
@@ -38,8 +41,10 @@ const ShardingLive = NodeClusterSocket.layer({
   }
 })
 
+const ExecutionIdsLive = ExecutionIdsSql.layer.pipe(Layer.provide(ShardingLive))
+
 const ClientLive = ClusterExecutions.clientLayer.pipe(
-  Layer.provide([ExecutionStoreSql.layer, ShardingLive]),
+  Layer.provide([ExecutionIdsLive, ExecutionStoreSql.layer, ShardingLive]),
   Layer.provide(SqlLive)
 )
 

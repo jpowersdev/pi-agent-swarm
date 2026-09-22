@@ -86,7 +86,9 @@ The runtime image maps validated actions such as `test`, `build`, `typecheck`, a
 
 Every execution ID addresses one Effect Cluster entity. Cluster provides durable message delivery, shard ownership, runner discovery, location-transparent clients, and scoped entity shutdown.
 
-Each runner separately advertises or is configured with local VM capacity. `ExecutionCapacity` currently uses a semaphore, releasing a slot immediately when Firecracker exits. `maxResidentEntities` remains a safety bound for entity shells rather than the live-VM limit because passivation is intentionally less immediate.
+Each runner separately advertises or is configured with local VM capacity. Its shard weight follows that capacity. `ExecutionCapacity` currently uses a semaphore, releasing a slot immediately when Firecracker exits. `maxResidentEntities` remains a safety bound for entity shells rather than the live-VM limit because passivation is intentionally less immediate.
+
+A shared sequence spreads consecutive execution IDs across low-discrepancy shard-ring positions. This smooths small bursts without inspecting runner ownership and continues to work as membership changes.
 
 ```text
 Cluster mailbox
@@ -104,7 +106,7 @@ Scale-in is coordinated:
 3. Close the runner scope, which interrupts remaining Firecracker children.
 4. Remove the process or machine.
 
-Current Effect shard placement is not dynamically capacity-aware. `maxResidentEntities` and VM permits prevent overload, but a runner may queue assigned work while another has spare capacity. The capacity controller must tolerate this, and a later placement layer may need to choose runner-compatible entity IDs or introduce explicit assignment metadata.
+Current Effect shard placement is not dynamically load-aware. The ID heuristic, shard weights, and VM permits improve distribution and prevent overload, but a runner may still queue assigned work while another has spare capacity. The capacity controller must tolerate this; stronger scheduling would require runner-compatible IDs or explicit assignment metadata.
 
 ## Durability
 
@@ -129,5 +131,5 @@ Warm memory snapshots may reduce boot time, but they do not replace workspace ha
 5. Replace full ext4 reconstruction with a measured copy-on-write workspace strategy.
 6. Add deadlines, bounded output, artifact publication, and richer cancellation results.
 7. Add runner draining and a platform-neutral process capacity controller.
-8. Measure and improve shard-placement imbalance under bursty workloads.
+8. Measure the low-discrepancy placement heuristic under bursty and heterogeneous workloads.
 9. Add production jailer isolation, authentication, observability, and garbage collection.
